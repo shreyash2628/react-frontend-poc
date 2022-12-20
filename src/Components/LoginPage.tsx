@@ -1,175 +1,161 @@
-import * as React from "react";
-import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
-import CssBaseline from "@mui/material/CssBaseline";
-import TextField from "@mui/material/TextField";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
-// import Link from '@mui/material/Link';
-import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-import SignUp from "./SignUp";
+import React, { useState,useEffect } from "react";
+import sweetAlert from "sweetalert2";
+import { Navigate, useNavigate, Link, useLocation } from "react-router-dom";
 
-import { useState } from "react";
+import { NavLink } from "react-router-dom";
+import axios from "axios";
+import { doLogin, isLoggedIn } from "../api";
+
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Navigate, useNavigate } from "react-router-dom";
 
-// import Button from '@mui/material/Button';
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-import Slide from "@mui/material/Slide";
-import { TransitionProps } from "@mui/material/transitions";
+const Swal = require("sweetalert2");
 
-const theme = createTheme();
-
-export default function LoginPage(props: any) {
+function LoginPage() {
   const navigate = useNavigate();
 
-  const [validate, setValidate] = React.useState(false);
-  const [userName, setUserName] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [userNameError, setUserNameError] = React.useState(false);
-  const [passwordError, setPasswordError] = React.useState(false);
+  const [user, setUser] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const [jwtToken, setJwtToken] = useState("");
 
-    const data = new FormData(event.currentTarget);
+  const [correctUser, setCorrectUser] = useState(false);
+  const [userErrMsg, setUserErrMsg] = useState("");
 
-    console.log(userName);
-    console.log(password);
+  const [correctPass, setCorrectPass] = useState(false);
+  const [passErrMsg, setPassErrMsg] = useState("");
 
-    if (userName.length == 0) {
-      setUserNameError(true);
-      setValidate(false);
-    } else if (password.length == 0) {
-      setPasswordError(true);
-      setValidate(false);
-    } else {
-      setValidate(true);
-      // navigate
-      navigate("/employeeDashboard");
-    }
-  };
+  const [userErr, setUserErr] = useState("");
+  const [passErr, setPassErr] = useState("");
+  const [isUserValidated, setUserValidated] = useState(false);
+  const [isPasswordValidated, setPasswordValidated] = useState(false);
 
-  //SignUp
-  const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & {
-      children: React.ReactElement<any, any>;
-    },
-    ref: React.Ref<unknown>
-  ) {
-    return <Slide direction="up" ref={ref} {...props} />;
+  let loginToken;
+
+  const [values, setValues] = useState({
+    name: "",
+    password: "",
   });
-  //SignUp
 
-  const [open, setOpen] = React.useState(false);
+  useEffect(() => {
+    // localStorage.setItem("LogInStatus",(false))
 
-  const handleClickOpen = () => {
-    setOpen(true);
+
+    
+  // console.log("🚀 ~ file: TopNavBar.tsx:138 ~ useEffect ~ status", status)
+
+  });
+
+  const loginHandle = (e: any) => {
+    e.preventDefault();
+
+   
+
+    const logInData = {
+      username: user,
+      password: password,
+    };
+
+    axios
+      .post("http://127.0.0.1:8000/api/auth/login", logInData)
+      .then((data) => {
+        loginToken = data.data.token;
+        console.log("Login Token is " + loginToken);
+
+        localStorage.setItem("LoginToken", loginToken);
+        localStorage.setItem("LogInStatus", "true");
+
+        if (isLoggedIn()) {
+          //will check if token is stored or not
+          Swal.fire({
+            icon: "success",
+            title: "Login Successfull",
+          });
+
+          navigate("/employeeDashboard");
+          console.log("Logged in Username = " + user);
+          console.log("Logged in Password = " + password);
+        } 
+      })
+      .catch((error) => {
+        console.log("USER NOT FOUND");
+
+        console.log(error.response.data);
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Invalid Credentials",
+        });
+      });
   };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const [errors, setErrors] = React.useState<any>({});
 
   return (
-    <ThemeProvider theme={theme}>
-      <Container className="" component="main" maxWidth="xs">
-        <CssBaseline />
+    <div>
+      <section className="min-h-screen flex flex-col">
+        <div className="flex flex-1 items-center justify-center">
+          <div className="rounded-lg sm:border-2 px-4 lg:px-24 py-16 lg:max-w-xl sm:max-w-md w-full text-center">
+            <form onSubmit={loginHandle} className="text-center">
+              <h1 className="font-bold tracking-wider text-3xl mb-8 w-full text-gray-600">
+                LOG IN
+              </h1>
 
-        <Box
-          className="sm:bg-gray-200 px-5 py-5 h-auto rounded-2xl"
-          // className="sm:ml-10 mr-10 sm:bg-white
-          //  md:bg-white ml-8 mr-8
-          //  lg:ml-6 mr-6 bg-green-500"
-          sx={{
-            marginTop: 8,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <Avatar
-            className="animate-bounce"
-            sx={{ m: 1, bgcolor: "secondary.main" }}
-          >
-            <LockOutlinedIcon />
-          </Avatar>
+              <div className="py-2 text-left">
+                <input
+                  type="text"
+                  onChange={(e) => setUser(e.target.value)}
+                  className="bg-gray-200 border-2 border-gray-100 focus:outline-none bg-gray-100 block w-full py-2 px-4 rounded-lg focus:border-gray-700 "
+                  placeholder="Username"
+                />
+                <br></br>
+                {correctUser ? (
+                  <span className="text-red-500 px-2">{userErrMsg}</span>
+                ) : (
+                  ""
+                )}
+              </div>
+              {/* pattern="[A-Za-z]{10}"  */}
 
-          <Typography component="h1" variant="h5">
-            Sign in
-          </Typography>
+              <div className="py-2 text-left">
+                <input
+                  type="password"
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-gray-200 border-2 border-gray-100 focus:outline-none bg-gray-100 block w-full py-2 px-4 rounded-lg focus:border-gray-700 "
+                  placeholder="Password"
+                />
+                <br></br>
+                {correctPass ? (
+                  <span className="text-red-500 px-2">{passErrMsg}</span>
+                ) : (
+                  ""
+                )}
+              </div>
+              {/* onClick={()=>loginHandle} */}
+              <div className="py-2">
+                <button
+                  type="submit"
+                  className="border-2 border-gray-100 focus:outline-none bg-purple-600 text-white font-bold tracking-wider block w-full p-2 rounded-lg focus:border-gray-700 hover:bg-purple-700"
+                >
+                  Log In
+                </button>
+              </div>
+            </form>
 
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            noValidate
-            sx={{ mt: 1 }}
-          >
-            <TextField
-              className="bg-white rounded"
-              margin="normal"
-              required
-              fullWidth
-              id="username"
-              label="UserName"
-              name="username"
-              autoComplete="username"
-              autoFocus
-              onChange={(e) => setUserName(e.target.value)}
-            />
-
-            {userNameError ? (
-              <label className="text-red-600 ml-2">
-                This field can not be empty
-              </label>
-            ) : (
-              ""
-            )}
-
-            <TextField
-              className="bg-white rounded"
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              onChange={(e) => setPassword(e.target.value)}
-            />
-
-            {passwordError ? (
-              <label className="text-red-600 ml-2">
-                This field can not be empty
-              </label>
-            ) : (
-              ""
-            )}
-
-            <Button
-              onClick={props.closeDialog}
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
-              Sign In
-            </Button>
-            {/* :""} */}
-          </Box>
-        </Box>
-      </Container>
-    </ThemeProvider>
+            <div className="text-center mt-4">
+              <span>Dont have an account?</span>
+              <NavLink
+                to="/SignUpPage"
+                className="font-light text-md text-indigo-600 underline font-semibold hover:text-indigo-800"
+              >
+                Create an account
+              </NavLink>
+            </div>
+          </div>
+          <div></div>
+        </div>
+      </section>
+    </div>
   );
 }
+
+export default LoginPage;

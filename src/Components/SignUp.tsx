@@ -1,168 +1,226 @@
-import * as React from "react";
-import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-import Slide from "@mui/material/Slide";
-import { TransitionProps } from "@mui/material/transitions";
-import TextField from "@mui/material/TextField";
-import { useState, useEffect } from "react";
-import { Label } from "reactstrap";
+import React, { useState } from "react";
+import sweetAlert from "sweetalert2";
+import { Navigate, useNavigate, Link, useLocation } from "react-router-dom";
+// const Swal = require('sweetalert2')
+import { NavLink } from "react-router-dom";
+import axios from "axios";
+import { doLogin } from "../api";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import validator from "validator";
+import isEmail from "validator/lib/isEmail";
 
-const Transition = React.forwardRef(function Transition(
-  props: TransitionProps & {
-    children: React.ReactElement<any, any>;
-  },
-  ref: React.Ref<unknown>
-) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
+import Swal from "sweetalert2";
 
-export default function SignUp(props: any) {
-  const [open, setOpen] = React.useState(false);
+function SignUp() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  
+  const [userErr, setUserErr] = useState("");
+  const [passErr, setPassErr] = useState("");
+  const [emailErr, setEmailErr] = useState("");
+  const [isEmailValidated, setEmailValidated] = useState(false);
+  const [isUserValidated, setUserValidated] = useState(false);
+  const [isPasswordValidated, setPasswordValidated] = useState(false);
 
-  const [userName, setUserName] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [emailID, setEmailId] = React.useState("");
+  function loginHandle(e: any) {
+    e.preventDefault();
 
-  const [registerData, setRegisterData] = React.useState([]);
+    const uppercaseRegExp = /(?=.*?[A-Z])/;
+    const lowercaseRegExp = /(?=.*?[a-z])/;
+    const digitsRegExp = /(?=.*?[0-9])/;
+    const minLengthRegExp = /.{6,}/;
 
-  const handleClickOpen = () => {
-    // props.signupClose
-    setOpen(true);
-  };
+    const uppercaseUser = uppercaseRegExp.test(user);
+    const lowercaseUser = lowercaseRegExp.test(user);
 
-  const handleClose = () => {
-    setOpen(false);
-  };
+    //USER VALIDATIONS
 
-  const handleOnChange = (e: any) => {
-    setUserName(e.target.value);
-  };
+    if (user.length == 0) {
+      toast.error("Invalid Username");
+      setUserErr(" Username is empty");
+      setUserValidated(false);
+    } else if (!uppercaseUser) {
+      toast.error("Invalid Username");
+      setUserErr(" Username should contain at least one Uppercase");
+      setUserValidated(false);
+    } else if (!lowercaseUser) {
+      toast.error("Invalid Username");
+      setUserErr(" Username should contain at least one Lowercase");
+      setUserValidated(false);
+    } else if (user.length < 5) {
+      toast.error("Invalid Username");
+      setUserErr(" Username should contain more than 5 characters");
+      setUserValidated(false);
+    } else {
+      setUserErr("");
 
-  //   useEffect(() => {
-  //     console.log(userName)
-  //   });
+      setUserValidated(true);
+    }
 
-  const postData = (e: any) => {
-    // e.preventDefault();
+    //EMAIL VALIDATIONS
+    if (validator.isEmail(email)) {
+      setEmailErr("");
+      setEmailValidated(true);
+    } else {
+      setEmailErr("Email is not valid");
+      toast.error("Email should be like abc@xyz.com");
+      setEmailValidated(false);
+    }
 
-    console.log("Submiited Successfully!");
-    console.log(userName);
-    console.log(password);
-    console.log(emailID);
+    //PASSWORD VALIDATIONS
 
-    // console.log("Submiited Successfully!")
-    // console.log("Submiited Successfully!")
+    const uppercasePassword = uppercaseRegExp.test(password);
+    const lowercasePassword = lowercaseRegExp.test(password);
+    const digitsPassword = digitsRegExp.test(password);
+    const minLengthPassword = minLengthRegExp.test(password);
 
-    // setPassword('')
-    // setUserName('')
-    // setEmailId('')
-  };
+    setPassErr(" ");
+    if (password.length === 0) {
+      toast.error("Invalid Password");
+      setPassErr("password is empty");
+      setPasswordValidated(false);
+    } else if (!uppercasePassword) {
+      toast.error("Invalid Password");
+      setPassErr(" Password should contain at least one Uppercase");
+      setPasswordValidated(false);
+    } else if (!lowercasePassword) {
+      toast.error("Invalid Password");
+      setPassErr(" Password should contain at least one Lowercase");
+      setPasswordValidated(false);
+    } else if (!digitsPassword) {
+      toast.error("Invalid Password");
+      setPassErr(" Password should contain at least one Digit");
+      setPasswordValidated(false);
+    } else if (!minLengthPassword) {
+      toast.error("Invalid Password");
+      setPassErr(" Password should contain minumum 6 characters");
+      setPasswordValidated(false);
+    } else {
+      setPasswordValidated(true);
+    }
+
+    if (isEmailValidated && isUserValidated && isPasswordValidated) {
+      // console.log("Everthing is cool,call the api");
+      const RegData = {
+        username: user,
+        email: email,
+        password: password,
+      };
+
+      
+      axios.post(`http://127.0.0.1:8000/api/auth/register`, RegData)
+        .then((jwtTokenData) => {
+          console.log(
+            " SignUp token stored in localStorage =>" + jwtTokenData.data.token
+          );
+
+          localStorage.setItem("SignUp",(jwtTokenData.data.token))
+          console.log("Details saved to localstorage");
+          Swal.fire({
+            icon: "success",
+            title: "Account created successfully!",
+          });
+          navigate("/loginPage");
+
+          // doLogin(jwtTokenData.data.token, () => {
+          //   console.log("Details saved to localstorage");
+
+          //   Swal.fire({
+          //     icon: "success",
+          //     title: "Account created successfully!",
+          //   });
+          //   navigate("/loginPage");
+          // });
+        })
+        .catch((error) => {
+          console.log(error.response.data);
+        });
+    }
+  }
 
   return (
-    // onClick={props.signupClose}
     <div>
-      <Button variant="outlined" onClick={handleClickOpen}>
-        create account
-      </Button>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
 
-      <div className="w-96">
-        <Dialog
-          open={open}
-          TransitionComponent={Transition}
-          keepMounted
-          onClose={handleClose}
-          aria-describedby="alert-dialog-slide-description"
-        >
-          <DialogTitle>{"Create your account"}</DialogTitle>
-          <DialogContent className="w-96">
-            <div className="flex flex-col">
-              <form>
-                <div className="flex flex-col">
-                  <div>
-                    <Label>Email : </Label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      placeholder="Email *"
-                      required
-                      value={emailID}
-                      onChange={(e) => setEmailId(e.target.value)}
-                      style={{
-                        marginBottom: "10px",
-                        width: "60%",
-                        padding: "10px",
-                        float: "right",
-                      }}
-                    />
-                  </div>
-                  <br></br>
-                  <div>
-                    <Label>User Name : </Label>
-                    <input
-                      type="text"
-                      id="username"
-                      name="username"
-                      placeholder="User Name *"
-                      required
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                      style={{
-                        marginBottom: "10px",
-                        width: "60%",
-                        padding: "10px",
-                        float: "right",
-                      }}
-                    />
-                  </div>
-                  <br></br>
-                  <div>
-                    <Label>Password : </Label>
-                    <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      placeholder="Password *"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      style={{
-                        marginBottom: "10px",
-                        width: "60%",
-                        padding: "10px",
-                        float: "right",
-                      }}
-                    />
-                  </div>
-                  <br></br>
+      <section className="min-h-screen flex flex-col">
+        <div className="flex flex-1 items-center justify-center">
 
-                  <Button
-                    variant="contained"
-                    color="success"
-                    onClick={postData}
-                    //   onClick={()=>console.log("clicked")}
-                    //   onClick={console.log("clicked")}
-                  >
-                    Submit
-                  </Button>
-                </div>
+          <div className="rounded-lg sm:border-2 px-4 lg:px-24 py-16 lg:max-w-xl sm:max-w-md w-full text-center">
+            <form onSubmit={loginHandle} className="text-center">
+              <h1 className="font-bold tracking-wider text-3xl mb-8 w-full text-gray-600">
+                Create Account
+              </h1>
 
-                <br />
-              </form>
+              <div className="py-2 text-left">
+                <input
+                  type="text"
+                  onChange={(e) => setUser(e.target.value)}
+                  className="bg-gray-200 border-2 border-gray-100 focus:outline-none bg-gray-100 block w-full py-2 px-4 rounded-lg focus:border-gray-700 "
+                  placeholder="Username"
+                />
+                {<span className="text-red-500 px-2">{userErr}</span>}
+                <br></br>
+              </div>
+
+              <div className="py-2 text-left">
+                <input
+                  type="text"
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-gray-200 border-2 border-gray-100 focus:outline-none bg-gray-100 block w-full py-2 px-4 rounded-lg focus:border-gray-700 "
+                  placeholder="Email Id"
+                />
+                {<span className="text-red-500 px-2">{emailErr}</span>}
+                <br></br>
+              </div>
+
+              <div className="py-2 text-left">
+                <input
+                  type="password"
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-gray-200 border-2 border-gray-100 focus:outline-none bg-gray-100 block w-full py-2 px-4 rounded-lg focus:border-gray-700 "
+                  placeholder="Password"
+                />
+                {<span className="text-red-500 px-2">{passErr}</span>}
+                <br></br>
+              </div>
+              <div className="py-2">
+                <button
+                  type="submit"
+                  className="border-2 border-gray-100 focus:outline-none bg-purple-600 text-white font-bold tracking-wider block w-full p-2 rounded-lg focus:border-gray-700 hover:bg-purple-700"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </form>
+
+            <div className="text-center mt-4">
+              <span>Already an account?</span>
+              <NavLink
+                to="/loginPage"
+                className="font-light text-md text-indigo-600 underline font-semibold hover:text-indigo-800"
+              >
+                Login
+              </NavLink>
             </div>
-
-            <DialogContentText id="alert-dialog-slide-description"></DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Close</Button>
-            {/* <Button onClick={handleClose}>Agree</Button> */}
-          </DialogActions>
-        </Dialog>
-      </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
+
+export default SignUp;
